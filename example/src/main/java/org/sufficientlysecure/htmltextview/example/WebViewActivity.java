@@ -17,8 +17,9 @@
 package org.sufficientlysecure.htmltextview.example;
 
 import android.os.Bundle;
-import androidx.appcompat.app.AppCompatActivity;
 import android.webkit.WebView;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 public class WebViewActivity extends AppCompatActivity {
     public static final String EXTRA_TABLE_HTML = "EXTRA_TABLE_HTML";

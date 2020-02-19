@@ -16,10 +16,10 @@
 package org.sufficientlysecure.htmltextview.example;
 
 import android.app.Activity;
-import androidx.databinding.BindingAdapter;
-import androidx.databinding.DataBindingUtil;
+import android.databinding.BindingAdapter;
+import android.databinding.DataBindingUtil;
 import android.os.Bundle;
-import androidx.annotation.Nullable;
+import android.support.annotation.Nullable;
 
 import org.sufficientlysecure.htmltextview.DrawTableLinkSpan;
 import org.sufficientlysecure.htmltextview.HtmlResImageGetter;
@@ -47,7 +47,7 @@ public class DataBindingExampleActivity extends Activity {
         // if you have set an android:id in XML, data binding do the 'findViewById()'
         DrawTableLinkSpan drawTableLinkSpan = new DrawTableLinkSpan();
         drawTableLinkSpan.setTableLinkText("[tap for table]");
-        binding.htmlText.setDrawTableLinkSpan(drawTableLinkSpan);
+//        binding.htmlText.setDrawTableLinkSpan(drawTableLinkSpan);
     }
 
     /**
