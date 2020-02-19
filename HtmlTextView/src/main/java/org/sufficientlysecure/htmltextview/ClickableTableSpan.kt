@@ -13,28 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.sufficientlysecure.htmltextview
 
-package org.sufficientlysecure.htmltextview;
-
-import android.text.style.ClickableSpan;
+import android.text.style.ClickableSpan
 
 /**
  * This span defines what should happen if a table is clicked. This abstract class is defined so
  * that applications can access the raw table HTML and do whatever they'd like to render it (e.g.
  * show it in a WebView).
  */
-public abstract class ClickableTableSpan extends ClickableSpan {
-    protected String tableHtml;
+abstract class ClickableTableSpan : ClickableSpan() {
+    var tableHtml: String? = null
 
     // This sucks, but we need this so that each table can get its own ClickableTableSpan.
-    // Otherwise, we end up removing the clicking from earlier tables.
-    public abstract ClickableTableSpan newInstance();
+// Otherwise, we end up removing the clicking from earlier tables.
+    abstract fun newInstance(): ClickableTableSpan?
 
-    public void setTableHtml(String tableHtml) {
-        this.tableHtml = tableHtml;
-    }
-
-    public String getTableHtml() {
-        return tableHtml;
-    }
 }
