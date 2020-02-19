@@ -104,153 +104,156 @@ class HtmlTagHandler : WrapperTagHandler {
     private class Th
     private class Td
 
-    override fun handleTag(opening: Boolean, tag: String, output: Editable, attributes: Attributes?): Boolean {
-        if (opening) { // opening tag
-            if (HtmlTextView.DEBUG) {
-                Log.d(HtmlTextView.TAG, "opening, output: $output")
-            }
-            if (tag.equals(UNORDERED_LIST, ignoreCase = true)) {
-                lists.push(tag)
-            } else if (tag.equals(ORDERED_LIST, ignoreCase = true)) {
-                lists.push(tag)
-                olNextIndex.push(1)
-            } else if (tag.equals(LIST_ITEM, ignoreCase = true)) {
-                if (output.isNotEmpty() && output[output.length - 1] != '\n') {
-                    output.append("\n")
+    override fun handleTag(opening: Boolean, tag: String?, output: Editable?, attributes: Attributes?): Boolean {
+        if(output != null && tag != null){
+            if (opening) { // opening tag
+                if (HtmlTextView.DEBUG) {
+                    Log.d(HtmlTextView.TAG, "opening, output: $output")
                 }
-                if (!lists.isEmpty()) {
-                    val parentList = lists.peek()
-                    if (parentList.equals(ORDERED_LIST, ignoreCase = true)) {
-                        start(output, Ol())
-                        olNextIndex.push(olNextIndex.pop() + 1)
-                    } else if (parentList.equals(UNORDERED_LIST, ignoreCase = true)) {
-                        start(output, Ul())
+                if (tag.equals(UNORDERED_LIST, ignoreCase = true)) {
+                    lists.push(tag)
+                } else if (tag.equals(ORDERED_LIST, ignoreCase = true)) {
+                    lists.push(tag)
+                    olNextIndex.push(1)
+                } else if (tag.equals(LIST_ITEM, ignoreCase = true)) {
+                    if (output.isNotEmpty() && output[output.length - 1] != '\n') {
+                        output.append("\n")
                     }
-                }
-            } else if (tag.equals(A_ITEM, ignoreCase = true)) {
-                val href = attributes?.getValue("href")
-                start(output, A(href))
-            } else if (tag.equals("code", ignoreCase = true)) {
-                start(output, Code())
-            } else if (tag.equals("center", ignoreCase = true)) {
-                start(output, Center())
-            } else if (tag.equals("s", ignoreCase = true) || tag.equals("strike", ignoreCase = true)) {
-                start(output, Strike())
-            } else if (tag.equals("table", ignoreCase = true)) {
-                start(output, Table())
-                if (tableTagLevel == 0) {
-                    tableHtmlBuilder = StringBuilder()
-                    // We need some text for the table to be replaced by the span because
+                    if (!lists.isEmpty()) {
+                        val parentList = lists.peek()
+                        if (parentList.equals(ORDERED_LIST, ignoreCase = true)) {
+                            start(output, Ol())
+                            olNextIndex.push(olNextIndex.pop() + 1)
+                        } else if (parentList.equals(UNORDERED_LIST, ignoreCase = true)) {
+                            start(output, Ul())
+                        }
+                    }
+                } else if (tag.equals(A_ITEM, ignoreCase = true)) {
+                    val href = attributes?.getValue("href")
+                    start(output, A(href))
+                } else if (tag.equals("code", ignoreCase = true)) {
+                    start(output, Code())
+                } else if (tag.equals("center", ignoreCase = true)) {
+                    start(output, Center())
+                } else if (tag.equals("s", ignoreCase = true) || tag.equals("strike", ignoreCase = true)) {
+                    start(output, Strike())
+                } else if (tag.equals("table", ignoreCase = true)) {
+                    start(output, Table())
+                    if (tableTagLevel == 0) {
+                        tableHtmlBuilder = StringBuilder()
+                        // We need some text for the table to be replaced by the span because
 // the other tags will remove their text when their text is extracted
-                    output.append("table placeholder")
-                }
-                tableTagLevel++
-            } else if (tag.equals("tr", ignoreCase = true)) {
-                start(output, Tr())
-            } else if (tag.equals("th", ignoreCase = true)) {
-                start(output, Th())
-            } else if (tag.equals("td", ignoreCase = true)) {
-                start(output, Td())
-            } else {
-                return false
-            }
-        } else { // closing tag
-            if (HtmlTextView.DEBUG) {
-                Log.d(HtmlTextView.TAG, "closing, output: $output")
-            }
-            if (tag.equals(UNORDERED_LIST, ignoreCase = true)) {
-                lists.pop()
-            } else if (tag.equals(ORDERED_LIST, ignoreCase = true)) {
-                lists.pop()
-                olNextIndex.pop()
-            } else if (tag.equals(LIST_ITEM, ignoreCase = true)) {
-                if (!lists.isEmpty()) {
-                    val listItemIndent = if (userGivenIndent > -1) userGivenIndent * 2 else defaultListItemIndent
-                    if (lists.peek().equals(UNORDERED_LIST, ignoreCase = true)) {
-                        if (output.isNotEmpty() && output[output.length - 1] != '\n') {
-                            output.append("\n")
-                        }
-                        // Nested BulletSpans increases distance between bullet and text, so we must prevent it.
-                        var indent = if (userGivenIndent > -1) userGivenIndent else defaultIndent
-                        val bullet = if (userGivenIndent > -1) BulletSpan(userGivenIndent) else defaultBullet
-                        if (lists.size > 1) {
-                            indent -= bullet.getLeadingMargin(true)
-                            if (lists.size > 2) { // This get's more complicated when we add a LeadingMarginSpan into the same line:
-// we have also counter it's effect to BulletSpan
-                                indent -= (lists.size - 2) * listItemIndent
-                            }
-                        }
-                        val newBullet = BulletSpan(indent)
-                        end(output, Ul::class.java, false,
-                                LeadingMarginSpan.Standard(listItemIndent * (lists.size - 1)),
-                                newBullet)
-                    } else if (lists.peek().equals(ORDERED_LIST, ignoreCase = true)) {
-                        if (output.isNotEmpty() && output[output.length - 1] != '\n') {
-                            output.append("\n")
-                        }
-                        // Nested NumberSpans increases distance between number and text, so we must prevent it.
-                        var indent = if (userGivenIndent > -1) userGivenIndent else defaultIndent
-                        val span = NumberSpan(indent, olNextIndex.lastElement() - 1)
-                        if (lists.size > 1) {
-                            indent -= span.getLeadingMargin(true)
-                            if (lists.size > 2) { // As with BulletSpan, we need to compensate for the spacing after the number.
-                                indent -= (lists.size - 2) * listItemIndent
-                            }
-                        }
-                        val numberSpan = NumberSpan(indent, olNextIndex.lastElement() - 1)
-                        end(output, Ol::class.java, false,
-                                LeadingMarginSpan.Standard(listItemIndent * (lists.size - 1)),
-                                numberSpan)
+                        output.append("table placeholder")
                     }
-                }
-            } else if (tag.equals(A_ITEM, ignoreCase = true)) {
-                val a = getLast(output, A::class.java)
-                val href = if (a is A) a.href else null
-                end(output, A::class.java, false, object : URLSpan(href) {
-                    override fun onClick(widget: View) {
-                        if (onClickATagListener != null) {
-                            onClickATagListener!!.onClick(widget, url)
-                        } else {
-                            super.onClick(widget)
-                        }
-                    }
-                })
-            } else if (tag.equals("code", ignoreCase = true)) {
-                end(output, Code::class.java, false, TypefaceSpan("monospace"))
-            } else if (tag.equals("center", ignoreCase = true)) {
-                end(output, Center::class.java, true, AlignmentSpan.Standard(Layout.Alignment.ALIGN_CENTER))
-            } else if (tag.equals("s", ignoreCase = true) || tag.equals("strike", ignoreCase = true)) {
-                end(output, Strike::class.java, false, StrikethroughSpan())
-            } else if (tag.equals("table", ignoreCase = true)) {
-                tableTagLevel--
-                // When we're back at the root-level table
-                if (tableTagLevel == 0) {
-                    val tableHtml = tableHtmlBuilder.toString()
-                    var myClickableTableSpan: ClickableTableSpan? = null
-                    if (clickableTableSpan != null) {
-                        myClickableTableSpan = clickableTableSpan!!.newInstance()
-                        myClickableTableSpan!!.tableHtml = tableHtml
-                    }
-                    var myDrawTableLinkSpan: DrawTableLinkSpan? = null
-                    if (drawTableLinkSpan != null) {
-                        myDrawTableLinkSpan = drawTableLinkSpan!!.newInstance()
-                    }
-                    end(output, Table::class.java, false, myDrawTableLinkSpan!!, myClickableTableSpan!!)
+                    tableTagLevel++
+                } else if (tag.equals("tr", ignoreCase = true)) {
+                    start(output, Tr())
+                } else if (tag.equals("th", ignoreCase = true)) {
+                    start(output, Th())
+                } else if (tag.equals("td", ignoreCase = true)) {
+                    start(output, Td())
                 } else {
-                    end(output, Table::class.java, false)
+                    return false
                 }
-            } else if (tag.equals("tr", ignoreCase = true)) {
-                end(output, Tr::class.java, false)
-            } else if (tag.equals("th", ignoreCase = true)) {
-                end(output, Th::class.java, false)
-            } else if (tag.equals("td", ignoreCase = true)) {
-                end(output, Td::class.java, false)
-            } else {
-                return false
+            } else { // closing tag
+                if (HtmlTextView.DEBUG) {
+                    Log.d(HtmlTextView.TAG, "closing, output: $output")
+                }
+                if (tag.equals(UNORDERED_LIST, ignoreCase = true)) {
+                    lists.pop()
+                } else if (tag.equals(ORDERED_LIST, ignoreCase = true)) {
+                    lists.pop()
+                    olNextIndex.pop()
+                } else if (tag.equals(LIST_ITEM, ignoreCase = true)) {
+                    if (!lists.isEmpty()) {
+                        val listItemIndent = if (userGivenIndent > -1) userGivenIndent * 2 else defaultListItemIndent
+                        if (lists.peek().equals(UNORDERED_LIST, ignoreCase = true)) {
+                            if (output.isNotEmpty() && output[output.length - 1] != '\n') {
+                                output.append("\n")
+                            }
+                            // Nested BulletSpans increases distance between bullet and text, so we must prevent it.
+                            var indent = if (userGivenIndent > -1) userGivenIndent else defaultIndent
+                            val bullet = if (userGivenIndent > -1) BulletSpan(userGivenIndent) else defaultBullet
+                            if (lists.size > 1) {
+                                indent -= bullet.getLeadingMargin(true)
+                                if (lists.size > 2) { // This get's more complicated when we add a LeadingMarginSpan into the same line:
+// we have also counter it's effect to BulletSpan
+                                    indent -= (lists.size - 2) * listItemIndent
+                                }
+                            }
+                            val newBullet = BulletSpan(indent)
+                            end(output, Ul::class.java, false,
+                                    LeadingMarginSpan.Standard(listItemIndent * (lists.size - 1)),
+                                    newBullet)
+                        } else if (lists.peek().equals(ORDERED_LIST, ignoreCase = true)) {
+                            if (output.isNotEmpty() && output[output.length - 1] != '\n') {
+                                output.append("\n")
+                            }
+                            // Nested NumberSpans increases distance between number and text, so we must prevent it.
+                            var indent = if (userGivenIndent > -1) userGivenIndent else defaultIndent
+                            val span = NumberSpan(indent, olNextIndex.lastElement() - 1)
+                            if (lists.size > 1) {
+                                indent -= span.getLeadingMargin(true)
+                                if (lists.size > 2) { // As with BulletSpan, we need to compensate for the spacing after the number.
+                                    indent -= (lists.size - 2) * listItemIndent
+                                }
+                            }
+                            val numberSpan = NumberSpan(indent, olNextIndex.lastElement() - 1)
+                            end(output, Ol::class.java, false,
+                                    LeadingMarginSpan.Standard(listItemIndent * (lists.size - 1)),
+                                    numberSpan)
+                        }
+                    }
+                } else if (tag.equals(A_ITEM, ignoreCase = true)) {
+                    val a = getLast(output, A::class.java)
+                    val href = if (a is A) a.href else null
+                    end(output, A::class.java, false, object : URLSpan(href) {
+                        override fun onClick(widget: View) {
+                            if (onClickATagListener != null) {
+                                onClickATagListener!!.onClick(widget, url)
+                            } else {
+                                super.onClick(widget)
+                            }
+                        }
+                    })
+                } else if (tag.equals("code", ignoreCase = true)) {
+                    end(output, Code::class.java, false, TypefaceSpan("monospace"))
+                } else if (tag.equals("center", ignoreCase = true)) {
+                    end(output, Center::class.java, true, AlignmentSpan.Standard(Layout.Alignment.ALIGN_CENTER))
+                } else if (tag.equals("s", ignoreCase = true) || tag.equals("strike", ignoreCase = true)) {
+                    end(output, Strike::class.java, false, StrikethroughSpan())
+                } else if (tag.equals("table", ignoreCase = true)) {
+                    tableTagLevel--
+                    // When we're back at the root-level table
+                    if (tableTagLevel == 0) {
+                        val tableHtml = tableHtmlBuilder.toString()
+                        var myClickableTableSpan: ClickableTableSpan? = null
+                        if (clickableTableSpan != null) {
+                            myClickableTableSpan = clickableTableSpan!!.newInstance()
+                            myClickableTableSpan!!.tableHtml = tableHtml
+                        }
+                        var myDrawTableLinkSpan: DrawTableLinkSpan? = null
+                        if (drawTableLinkSpan != null) {
+                            myDrawTableLinkSpan = drawTableLinkSpan!!.newInstance()
+                        }
+                        end(output, Table::class.java, false, myDrawTableLinkSpan!!, myClickableTableSpan!!)
+                    } else {
+                        end(output, Table::class.java, false)
+                    }
+                } else if (tag.equals("tr", ignoreCase = true)) {
+                    end(output, Tr::class.java, false)
+                } else if (tag.equals("th", ignoreCase = true)) {
+                    end(output, Th::class.java, false)
+                } else if (tag.equals("td", ignoreCase = true)) {
+                    end(output, Td::class.java, false)
+                } else {
+                    return false
+                }
             }
+            storeTableTags(opening, tag)
+            return true
         }
-        storeTableTags(opening, tag)
-        return true
+        return false
     }
 
     /**
